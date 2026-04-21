@@ -10,95 +10,67 @@ def migrate(cr, version):
     Desactiva vistas de módulos desinstalados que no existen en v19.
     Se hace en post-migrate para que corra después de que todos los
     módulos carguen y antes de que el servidor levante.
-    """
-    _logger.info("stock_ux post-migrate: desactivando vistas de módulos desinstalados")
 
+    Estrategia mixta:
+    - Módulos completamente desinstalados: desactivar TODAS sus vistas por módulo
+    - Módulos instalados con vistas problemáticas específicas: desactivar por xmlid
+    """
+
+    # ------------------------------------------------------------------
+    # OPCIÓN B: Desactivar TODAS las vistas de módulos completamente
+    # desinstalados — robusto, no requiere mantenimiento por xmlid
+    # ------------------------------------------------------------------
+    modulos_desinstalados_completos = [
+        'stock_voucher',
+        'stock_reserve',
+        'stock_batch_picking_ux',
+        'stock_picking_purchase_order_link',
+        'stock_picking_sale_order_link',
+        'stock_picking_show_return',
+        'account_tax_settlement',
+        'l10n_ar_account_tax_settlement',
+        'l10n_ar_account_withholding',
+        'stock_account_ux',
+        'l10n_ar_stock_adhoc',
+        'enseco_report_custom',
+    ]
+
+    _logger.info("stock_ux post-migrate: desactivando TODAS las vistas de módulos desinstalados")
+    cr.execute("""
+        UPDATE ir_ui_view SET active = False
+        WHERE id IN (
+            SELECT res_id FROM ir_model_data
+            WHERE module = ANY(%s)
+            AND model = 'ir.ui.view'
+        )
+        AND active = True
+    """, (modulos_desinstalados_completos,))
+    _logger.info(f"  ✓ {cr.rowcount} vistas de módulos desinstalados desactivadas")
+
+    # ------------------------------------------------------------------
+    # OPCIÓN A: Desactivar vistas específicas de módulos instalados
+    # con campos/referencias obsoletas en v19
+    # ------------------------------------------------------------------
+    _logger.info("stock_ux post-migrate: desactivando vistas específicas problemáticas")
     vistas = [
-        # stock_voucher
-        ('stock_voucher', 'view_move_tree'),
-        ('stock_voucher', 'view_picking_form'),
-        ('stock_voucher', 'view_picking_type_form'),
-        ('stock_voucher', 'view_print_stock_voucher_form'),
-        ('stock_voucher', 'view_stock_picking_voucher_form'),
-        ('stock_voucher', 'view_stock_picking_voucher_tree'),
-        ('stock_voucher', 'vpicktree'),
-        # stock_reserve
-        ('stock_reserve', 'product_product_form_view_reservation_button'),
-        ('stock_reserve', 'product_template_form_view_reservation_button'),
-        # stock_batch_picking_ux
-        ('stock_batch_picking_ux', 'custom_label_transfer_template_view_pdf'),
-        ('stock_batch_picking_ux', 'custom_label_transfer_template_view_zpl'),
-        ('stock_batch_picking_ux', 'vpicktree'),
-        # stock_picking_purchase_order_link
-        ('stock_picking_purchase_order_link', 'view_picking_form'),
-        # stock_picking_sale_order_link
-        ('stock_picking_sale_order_link', 'view_picking_form'),
-        # stock_picking_show_return
-        ('stock_picking_show_return', 'view_picking_form'),
-        # purchase_stock_ux
+        # purchase_stock_ux (instalado pero vistas con campos obsoletos)
         ('purchase_stock_ux', 'purchase_order_line_search'),
         ('purchase_stock_ux', 'purchase_order_line_tree'),
-        # sale_stock_picking_note
+        # sale_stock_picking_note (instalado pero campo picking_note eliminado)
         ('sale_stock_picking_note', 'view_picking_form'),
         ('sale_stock_picking_note', 'view_order_form'),
         ('sale_stock_picking_note', 'view_partner_form_inherit_partner_picking_note'),
         ('sale_stock_picking_note', 'report_delivery_document_customer_note'),
-        # l10n_ar_withholding_ux
+        # l10n_ar_withholding_ux (instalado pero vistas con campos obsoletos)
         ('l10n_ar_withholding_ux', 'report_payment_receipt_document'),
-        # account_tax_settlement
-        ('account_tax_settlement', 'view_account_tax_settlement_wizard_form'),
-        ('account_tax_settlement', 'view_download_files_wizard_search'),
-        ('account_tax_settlement', 'download_files_wizard'),
-        ('account_tax_settlement', 'view_account_move_line_filter'),
-        ('account_tax_settlement', 'view_account_move_line_tree'),
-        ('account_tax_settlement', 'view_move_form'),
-        ('account_tax_settlement', 'view_account_journal_form'),
-        ('account_tax_settlement', 'account_report_form'),
-        # l10n_ar_account_tax_settlement
-        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_form'),
-        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_index_tree'),
-        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_index_search'),
-        ('l10n_ar_account_tax_settlement', 'view_tax_form_inherited'),
-        # l10n_ar_account_withholding
-        ('l10n_ar_account_withholding', 'view_res_company_jurisdiction_padron_tree'),
-        ('l10n_ar_account_withholding', 'view_res_company_jurisdiction_padron_form'),
-        ('l10n_ar_account_withholding', 'view_partner_form'),
-        ('l10n_ar_account_withholding', 'res_config_settings_view_form'),
-        ('l10n_ar_account_withholding', 'view_afip_tabla_ganancias_escala_tree'),
-        ('l10n_ar_account_withholding', 'view_afip_tabla_ganancias_alicuotasymontos_tree'),
-        ('l10n_ar_account_withholding', 'view_account_payment_tree'),
-        ('l10n_ar_account_withholding', 'view_res_partner_arba_alicuot_tree'),
-        ('l10n_ar_account_withholding', 'view_res_partner_arba_alicuot_form'),
-        ('l10n_ar_account_withholding', 'view_partner_withholding_amount_type_form'),
-        # l10n_ar_withholding_ux
         ('l10n_ar_withholding_ux', 'view_tax_form'),
         ('l10n_ar_withholding_ux', 'view_l10n_ar_payment_withholding_form'),
         ('l10n_ar_withholding_ux', 'view_account_tax_search'),
         ('l10n_ar_withholding_ux', 'report_withholding_certificate_document'),
         ('l10n_ar_withholding_ux', 'report_withholding_certificate'),
         ('l10n_ar_withholding_ux', 'report_payment_receipt'),
-        # stock_account_ux
-        ('stock_account_ux', 'view_move_form'),
-        # l10n_ar_stock_adhoc
-        ('l10n_ar_stock_adhoc', 'product_template_form_view'),
-        ('l10n_ar_stock_adhoc', 'product_uom_tree_view'),
-        ('l10n_ar_stock_adhoc', 'report_deliveryslip'),
-        ('l10n_ar_stock_adhoc', 'report_invoice_document'),
-        ('l10n_ar_stock_adhoc', 'res_config_settings_view_form'),
-        ('l10n_ar_stock_adhoc', 'search_product_lot_filter'),
-        ('l10n_ar_stock_adhoc', 'view_arba_cot_wizard'),
-        ('l10n_ar_stock_adhoc', 'view_picking_cot_form'),
-        ('l10n_ar_stock_adhoc', 'view_production_lot_form'),
-        ('l10n_ar_stock_adhoc', 'view_production_lot_tree'),
-        ('l10n_ar_stock_adhoc', 'view_stock_book_form'),
-        # stock_voucher - vistas adicionales
-        ('stock_voucher', 'view_stock_book_tree'),
-        ('stock_voucher', 'view_stock_book_form'),
-        ('stock_voucher', 'view_picking_internal_search'),
-        ('stock_voucher', 'view_move_search'),
-        ('stock_voucher', 'custom_label_transfer_template_view_zpl'),
-        ('stock_voucher', 'custom_label_transfer_template_view_pdf'),
-        ('stock_voucher', 'custom_barcode_transfer_template_view_zpl'),
+        # studio_customization - vista hija con product_uom obsoleto
+        ('studio_customization', 'web_studio_report_ed_06cda52f-63b6-4712-bced-8de16bbe3c81'),
     ]
 
     total = 0
@@ -117,9 +89,11 @@ def migrate(cr, version):
             _logger.info(f"  ✓ {module}.{xmlid} desactivada")
             total += 1
 
-    _logger.info(f"stock_ux post-migrate: {total} vistas desactivadas")
+    _logger.info(f"  Total vistas específicas desactivadas: {total}")
 
+    # ------------------------------------------------------------------
     # Desactivar acciones con modelos inexistentes
+    # ------------------------------------------------------------------
     _logger.info("stock_ux post-migrate: desactivando acciones con modelos inexistentes")
     cr.execute("""
         UPDATE ir_act_window
@@ -140,7 +114,9 @@ def migrate(cr, version):
     """)
     _logger.info(f"  ✓ {cr.rowcount} acciones con dominio tax_settlement desactivadas")
 
+    # ------------------------------------------------------------------
     # Desactivar menús que apuntan a modelos inexistentes
+    # ------------------------------------------------------------------
     _logger.info("stock_ux post-migrate: desactivando menús con modelos inexistentes")
     cr.execute("""
         UPDATE ir_ui_menu SET active = False
@@ -158,21 +134,9 @@ def migrate(cr, version):
     """)
     _logger.info(f"  ✓ {cr.rowcount} menús desactivados")
 
-    # Desactivar vistas de enseco_report_custom (módulo desinstalado)
-    # El nuevo módulo las va a recrear al instalarse
-    _logger.info("stock_ux post-migrate: desactivando vistas de enseco_report_custom")
-    cr.execute("""
-        UPDATE ir_ui_view SET active = False
-        WHERE id IN (
-            SELECT res_id FROM ir_model_data
-            WHERE module = 'enseco_report_custom'
-            AND model = 'ir.ui.view'
-        )
-        AND active = True
-    """)
-    _logger.info(f"  ✓ {cr.rowcount} vistas de enseco_report_custom desactivadas")
-
+    # ------------------------------------------------------------------
     # Desactivar acción del reporte stock_voucher
+    # ------------------------------------------------------------------
     _logger.info("stock_ux post-migrate: desactivando acción reporte stock_voucher")
     cr.execute("""
         UPDATE ir_act_report_xml SET binding_model_id = NULL
@@ -180,7 +144,9 @@ def migrate(cr, version):
     """)
     _logger.info(f"  ✓ {cr.rowcount} acciones de reporte stock_voucher desactivadas")
 
+    # ------------------------------------------------------------------
     # Corregir templates de Studio con campos obsoletos en v19
+    # ------------------------------------------------------------------
     _logger.info("stock_ux post-migrate: corrigiendo templates de Studio con campos obsoletos")
 
     # 4152: sale report copy - product_uom renombrado a product_uom_id en v19
