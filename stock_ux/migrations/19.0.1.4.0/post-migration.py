@@ -97,3 +97,64 @@ def migrate(cr, version):
             total += 1
 
     _logger.info(f"stock_ux post-migrate: {total} vistas desactivadas")
+
+    # Desactivar acciones con modelos inexistentes
+    _logger.info("stock_ux post-migrate: desactivando acciones con modelos inexistentes")
+    cr.execute("""
+        UPDATE ir_act_window
+        SET binding_model_id = NULL
+        WHERE res_model IN (
+            'afip.tabla_ganancias.escala',
+            'afip.tabla_ganancias.alicuotasymontos',
+            'stock.book',
+            'stock.reservation'
+        )
+    """)
+    _logger.info(f"  ✓ {cr.rowcount} acciones con modelos inexistentes desactivadas")
+
+    cr.execute("""
+        UPDATE ir_act_window
+        SET binding_model_id = NULL
+        WHERE domain::text LIKE '%tax_settlement%'
+    """)
+    _logger.info(f"  ✓ {cr.rowcount} acciones con dominio tax_settlement desactivadas")
+
+    # Desactivar menús que apuntan a modelos inexistentes
+    _logger.info("stock_ux post-migrate: desactivando menús con modelos inexistentes")
+    cr.execute("""
+        UPDATE ir_ui_menu SET active = False
+        WHERE action IN (
+            SELECT 'ir.actions.act_window,' || id::text
+            FROM ir_act_window
+            WHERE res_model IN (
+                'afip.tabla_ganancias.escala',
+                'afip.tabla_ganancias.alicuotasymontos',
+                'stock.book',
+                'stock.reservation'
+            )
+            OR domain::text LIKE '%tax_settlement%'
+        )
+    """)
+    _logger.info(f"  ✓ {cr.rowcount} menús desactivados")
+
+    # Desactivar vistas de enseco_report_custom (módulo desinstalado)
+    # El nuevo módulo las va a recrear al instalarse
+    _logger.info("stock_ux post-migrate: desactivando vistas de enseco_report_custom")
+    cr.execute("""
+        UPDATE ir_ui_view SET active = False
+        WHERE id IN (
+            SELECT res_id FROM ir_model_data
+            WHERE module = 'enseco_report_custom'
+            AND model = 'ir.ui.view'
+        )
+        AND active = True
+    """)
+    _logger.info(f"  ✓ {cr.rowcount} vistas de enseco_report_custom desactivadas")
+
+    # Desactivar acción del reporte stock_voucher
+    _logger.info("stock_ux post-migrate: desactivando acción reporte stock_voucher")
+    cr.execute("""
+        UPDATE ir_act_report_xml SET binding_model_id = NULL
+        WHERE report_name LIKE '%stock_voucher%'
+    """)
+    _logger.info(f"  ✓ {cr.rowcount} acciones de reporte stock_voucher desactivadas")
