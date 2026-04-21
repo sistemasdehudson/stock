@@ -91,6 +91,14 @@ def migrate(cr, version):
         ('l10n_ar_stock_adhoc', 'view_production_lot_form'),
         ('l10n_ar_stock_adhoc', 'view_production_lot_tree'),
         ('l10n_ar_stock_adhoc', 'view_stock_book_form'),
+        # stock_voucher - vistas adicionales
+        ('stock_voucher', 'view_stock_book_tree'),
+        ('stock_voucher', 'view_stock_book_form'),
+        ('stock_voucher', 'view_picking_internal_search'),
+        ('stock_voucher', 'view_move_search'),
+        ('stock_voucher', 'custom_label_transfer_template_view_zpl'),
+        ('stock_voucher', 'custom_label_transfer_template_view_pdf'),
+        ('stock_voucher', 'custom_barcode_transfer_template_view_zpl'),
     ]
 
     total = 0
