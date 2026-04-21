@@ -44,6 +44,40 @@ def migrate(cr, version):
         ('sale_stock_picking_note', 'report_delivery_document_customer_note'),
         # l10n_ar_withholding_ux
         ('l10n_ar_withholding_ux', 'report_payment_receipt_document'),
+        # account_tax_settlement
+        ('account_tax_settlement', 'view_account_tax_settlement_wizard_form'),
+        ('account_tax_settlement', 'view_download_files_wizard_search'),
+        ('account_tax_settlement', 'download_files_wizard'),
+        ('account_tax_settlement', 'view_account_move_line_filter'),
+        ('account_tax_settlement', 'view_account_move_line_tree'),
+        ('account_tax_settlement', 'view_move_form'),
+        ('account_tax_settlement', 'view_account_journal_form'),
+        ('account_tax_settlement', 'account_report_form'),
+        # l10n_ar_account_tax_settlement
+        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_form'),
+        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_index_tree'),
+        ('l10n_ar_account_tax_settlement', 'inflation_adjustment_index_search'),
+        ('l10n_ar_account_tax_settlement', 'view_tax_form_inherited'),
+        # l10n_ar_account_withholding
+        ('l10n_ar_account_withholding', 'view_res_company_jurisdiction_padron_tree'),
+        ('l10n_ar_account_withholding', 'view_res_company_jurisdiction_padron_form'),
+        ('l10n_ar_account_withholding', 'view_partner_form'),
+        ('l10n_ar_account_withholding', 'res_config_settings_view_form'),
+        ('l10n_ar_account_withholding', 'view_afip_tabla_ganancias_escala_tree'),
+        ('l10n_ar_account_withholding', 'view_afip_tabla_ganancias_alicuotasymontos_tree'),
+        ('l10n_ar_account_withholding', 'view_account_payment_tree'),
+        ('l10n_ar_account_withholding', 'view_res_partner_arba_alicuot_tree'),
+        ('l10n_ar_account_withholding', 'view_res_partner_arba_alicuot_form'),
+        ('l10n_ar_account_withholding', 'view_partner_withholding_amount_type_form'),
+        # l10n_ar_withholding_ux
+        ('l10n_ar_withholding_ux', 'view_tax_form'),
+        ('l10n_ar_withholding_ux', 'view_l10n_ar_payment_withholding_form'),
+        ('l10n_ar_withholding_ux', 'view_account_tax_search'),
+        ('l10n_ar_withholding_ux', 'report_withholding_certificate_document'),
+        ('l10n_ar_withholding_ux', 'report_withholding_certificate'),
+        ('l10n_ar_withholding_ux', 'report_payment_receipt'),
+        # stock_account_ux
+        ('stock_account_ux', 'view_move_form'),
     ]
 
     total = 0
