@@ -1,4 +1,5 @@
 import logging
+import re
 
 _logger = logging.getLogger(__name__)
 
@@ -78,6 +79,18 @@ def migrate(cr, version):
         ('l10n_ar_withholding_ux', 'report_payment_receipt'),
         # stock_account_ux
         ('stock_account_ux', 'view_move_form'),
+        # l10n_ar_stock_adhoc
+        ('l10n_ar_stock_adhoc', 'product_template_form_view'),
+        ('l10n_ar_stock_adhoc', 'product_uom_tree_view'),
+        ('l10n_ar_stock_adhoc', 'report_deliveryslip'),
+        ('l10n_ar_stock_adhoc', 'report_invoice_document'),
+        ('l10n_ar_stock_adhoc', 'res_config_settings_view_form'),
+        ('l10n_ar_stock_adhoc', 'search_product_lot_filter'),
+        ('l10n_ar_stock_adhoc', 'view_arba_cot_wizard'),
+        ('l10n_ar_stock_adhoc', 'view_picking_cot_form'),
+        ('l10n_ar_stock_adhoc', 'view_production_lot_form'),
+        ('l10n_ar_stock_adhoc', 'view_production_lot_tree'),
+        ('l10n_ar_stock_adhoc', 'view_stock_book_form'),
     ]
 
     total = 0
@@ -158,3 +171,40 @@ def migrate(cr, version):
         WHERE report_name LIKE '%stock_voucher%'
     """)
     _logger.info(f"  ✓ {cr.rowcount} acciones de reporte stock_voucher desactivadas")
+
+    # Corregir templates de Studio con campos obsoletos en v19
+    _logger.info("stock_ux post-migrate: corrigiendo templates de Studio con campos obsoletos")
+
+    # 4152: sale report copy - product_uom renombrado a product_uom_id en v19
+    cr.execute("""
+        UPDATE ir_ui_view
+        SET arch_db = CAST(
+            regexp_replace(
+                arch_db::text,
+                't-field="line\\.product_uom"',
+                't-field="line.product_uom_id"',
+                'g'
+            ) AS jsonb
+        )
+        WHERE id = 4152
+        AND arch_db::text LIKE '%line.product_uom%'
+    """)
+    if cr.rowcount > 0:
+        _logger.info("  ✓ Template Studio sale (4152): product_uom → product_uom_id")
+
+    # 4161: delivery report copy - product_packaging_id no existe en stock.move en v19
+    cr.execute("""
+        UPDATE ir_ui_view
+        SET arch_db = CAST(
+            regexp_replace(
+                arch_db::text,
+                '<span[^>]*t-if="move\\.product_packaging_id"[^/]*/?>',
+                '',
+                'g'
+            ) AS jsonb
+        )
+        WHERE id = 4161
+        AND arch_db::text LIKE '%product_packaging_id%'
+    """)
+    if cr.rowcount > 0:
+        _logger.info("  ✓ Template Studio delivery (4161): product_packaging_id eliminado")
