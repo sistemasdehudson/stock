@@ -32,7 +32,7 @@ def migrate(cr, version):
         'l10n_ar_account_withholding',
         'stock_account_ux',
         'l10n_ar_stock_adhoc',
-        'enseco_report_custom',
+        # 'enseco_report_custom',  # Ahora está instalado en v19, no desactivar sus vistas
     ]
 
     _logger.info("stock_ux post-migrate: desactivando TODAS las vistas de módulos desinstalados")
